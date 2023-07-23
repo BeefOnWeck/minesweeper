@@ -1,6 +1,9 @@
 use bevy::prelude::*;
 use bevy::window::WindowResolution;
 
+use board_plugin::BoardPlugin;
+use board_plugin::components::Coordinates;
+
 #[cfg(feature = "debug")]
 use bevy_inspector_egui::quick::WorldInspectorPlugin;
 
@@ -18,6 +21,8 @@ fn main() {
     #[cfg(feature = "debug")]
     // Debug hierarchy inspector
     app.add_plugins(WorldInspectorPlugin::new());
+    app.add_plugins(BoardPlugin);
+    app.register_type::<Coordinates>();
     // Startup system (cameras)
     app.add_systems(Startup, camera_setup);
     // Run the app
