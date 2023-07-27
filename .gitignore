@@ -1,3 +1,4 @@
 /target
 .vscode
 /board_plugin/target
+.DS_Store
