@@ -219,7 +219,7 @@ impl BoardPlugin {
                 alignment: TextAlignment::Center,
                 ..Default::default()
             },
-            text_anchor: Anchor::Center,
+            text_anchor: Anchor::Custom(Vec2::new(0.0, 0.1)),
             transform: Transform::from_xyz(0., 0., 1.),
             ..Default::default()
         }
