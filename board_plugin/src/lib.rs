@@ -1,20 +1,35 @@
 pub mod components;
 pub mod resources;
 
+use bevy::app::{App, Plugin, Startup};
+use bevy::asset::{AssetServer, Handle};
+use bevy::core::Name;
+use bevy::ecs::{
+    query::With,
+    system::{Commands, Query, Res}
+};
+use bevy::hierarchy::{BuildChildren, ChildBuilder};
 use bevy::log;
-use bevy::prelude::*;
-use bevy::sprite::Anchor;
-use bevy::window::PrimaryWindow;
-use components::Bomb;
-use components::BombNeighbor;
-use components::Uncover;
-use resources::BoardOptions;
-use resources::tile::Tile;
-use resources::tile_map::TileMap;
+use bevy::math::{Vec2, Vec3};
+use bevy::render::{
+    color::Color,
+    prelude::SpatialBundle,
+    texture::Image,
+    view::Visibility
+};
+use bevy::sprite::{Anchor, SpriteBundle, Sprite};
+use bevy::text::{Font, Text2dBundle, Text, TextSection, TextStyle, TextAlignment};
+use bevy::transform::components::{Transform, GlobalTransform};
+use bevy::window::{PrimaryWindow, Window};
 
-use crate::components::Coordinates;
-use crate::resources::BoardPosition;
-use crate::resources::TileSize;
+use components::{Bomb, BombNeighbor, Coordinates, Uncover};
+use resources::{
+    BoardOptions,
+    BoardPosition,
+    tile::Tile,
+    tile_map::TileMap,
+    TileSize
+};
 
 pub struct BoardPlugin;
 
