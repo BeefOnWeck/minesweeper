@@ -1,5 +1,7 @@
 pub mod components;
 pub mod resources;
+mod bounds;
+mod systems;
 
 use bevy::app::{App, Plugin, Startup};
 use bevy::asset::{AssetServer, Handle};
@@ -11,6 +13,7 @@ use bevy::ecs::{
 use bevy::hierarchy::{BuildChildren, ChildBuilder};
 use bevy::log;
 use bevy::math::{Vec2, Vec3};
+use bevy::prelude::Update;
 use bevy::render::{
     color::Color,
     prelude::SpatialBundle,
@@ -24,18 +27,21 @@ use bevy::window::{PrimaryWindow, Window};
 
 use components::{Bomb, BombNeighbor, Coordinates, Uncover};
 use resources::{
+    board::Board,
     BoardOptions,
     BoardPosition,
     tile::Tile,
     tile_map::TileMap,
     TileSize
 };
+use bounds::Bounds2;
 
 pub struct BoardPlugin;
 
 impl Plugin for BoardPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(Startup, Self::create_board);
+        app.add_systems(Update, systems::input::input_handling);
         log::info!("Loaded Board Plugin");
     }
 }
@@ -123,6 +129,17 @@ impl BoardPlugin {
                 );
                 
             });
+        
+        // We add the main resource of the game, the board
+        commands.insert_resource(Board {
+            tile_map,
+            bounds: Bounds2 {
+                position: Vec2::new(board_position.x, board_position.y),
+                size: board_size,
+            },
+            tile_size,
+        })
+
     }
 
     /// Computes a tile size that matches the window according to the tile map size
