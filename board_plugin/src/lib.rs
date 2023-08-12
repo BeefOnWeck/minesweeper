@@ -1,12 +1,15 @@
 pub mod components;
 pub mod resources;
 mod bounds;
+mod events;
 mod systems;
 
+use std::collections::HashMap;
 use bevy::app::{App, Plugin, Startup};
 use bevy::asset::{AssetServer, Handle};
 use bevy::core::Name;
 use bevy::ecs::{
+    entity::Entity,
     query::With,
     system::{Commands, Query, Res}
 };
@@ -36,12 +39,17 @@ use resources::{
 };
 use bounds::Bounds2;
 
+use crate::events::TileTriggerEvent;
+
 pub struct BoardPlugin;
 
 impl Plugin for BoardPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(Startup, Self::create_board);
         app.add_systems(Update, systems::input::input_handling);
+        app.add_systems(Update, systems::uncover::trigger_event_handler);
+        app.add_systems(Update, systems::uncover::uncover_tiles);
+        app.add_event::<TileTriggerEvent>();
         log::info!("Loaded Board Plugin");
     }
 }
@@ -94,6 +102,10 @@ impl BoardPlugin {
             BoardPosition::Custom(p) => p,
         };
 
+        let mut covered_tiles = HashMap::with_capacity(
+            ( tile_map.width() * tile_map.height() ).into()
+        );
+
         commands
             .spawn(
                 SpatialBundle {
@@ -123,6 +135,8 @@ impl BoardPlugin {
                     &tile_map,
                     tile_size,
                     options.tile_padding,
+                    Color::DARK_GRAY,
+                    &mut covered_tiles,
                     Color::GRAY,
                     bomb_image,
                     font,
@@ -138,6 +152,7 @@ impl BoardPlugin {
                 size: board_size,
             },
             tile_size,
+            covered_tiles
         })
 
     }
@@ -158,13 +173,19 @@ impl BoardPlugin {
         tile_map: &TileMap,
         size: f32,
         padding: f32,
+        covered_tile_color: Color,
+        covered_tiles: &mut HashMap<Coordinates, Entity>,
         color: Color,
         bomb_image: Handle<Image>,
-        font: Handle<Font>,
+        font: Handle<Font>
     ) {
         // Tiles
         for (y, line) in tile_map.iter().enumerate() {
             for (x, tile) in line.iter().enumerate() {
+                let coordinates = Coordinates {
+                    x: x as u16,
+                    y: y as u16,
+                };
                 let mut cmd = parent.spawn(
                     SpriteBundle {
                         sprite: Sprite {
@@ -183,12 +204,23 @@ impl BoardPlugin {
                     }
                 );
                 cmd.insert(Name::new(format!("Tile ({}, {})", x, y)));
-                cmd.insert(
-                    Coordinates {
-                        x: x as u16,
-                        y: y as u16,
-                    }
-                );
+                cmd.insert(coordinates);
+                cmd.with_children(|parent| {
+                    let entity = parent
+                        .spawn(
+                            SpriteBundle {
+                                sprite: Sprite {
+                                    custom_size: Some(Vec2::splat(size - padding)),
+                                    color: covered_tile_color,
+                                    ..Default::default()
+                                },
+                                transform: Transform::from_xyz(0.0, 0.0, 2.0),
+                                ..Default::default()
+                            })
+                        .insert(Name::new("Tile Cover"))
+                        .id();
+                    covered_tiles.insert(coordinates, entity);
+                });
                 match tile {
                     // If the tile is a bomb we add the matching component and a sprite child
                     Tile::Bomb => {

@@ -1,4 +1,3 @@
-use crate::Board;
 use bevy::input::{
     mouse::{
         MouseButton,
@@ -9,16 +8,20 @@ use bevy::input::{
 use bevy::log;
 
 use bevy::ecs::{
-    event::EventReader,
+    event::{EventReader, EventWriter},
     query::With,
     system::{Commands, Query, Res}
 };
 use bevy::window::{PrimaryWindow, Window};
 
+use crate::Board;
+use crate::events::TileTriggerEvent;
+
 pub fn input_handling(
     window_query: Query<&Window, With<PrimaryWindow>>,
     board: Res<Board>,
     mut button_evr: EventReader<MouseButtonInput>,
+    mut tile_trigger_ewr: EventWriter<TileTriggerEvent>
 ) {
 
     let window = window_query.get_single().unwrap();
@@ -33,7 +36,7 @@ pub fn input_handling(
                     match event.button {
                         MouseButton::Left => {
                             log::info!("Trying to uncover tile on {}", coordinates);
-                            // TODO: generate an event
+                            tile_trigger_ewr.send(TileTriggerEvent{coordinates});
                         }
                         MouseButton::Right => {
                             log::info!("Trying to mark tile on {}", coordinates);
