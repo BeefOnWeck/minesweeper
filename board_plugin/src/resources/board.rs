@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use bevy::utils::HashMap;
 
 use bevy::math::Vec2;
 use bevy::ecs::{
@@ -23,7 +23,10 @@ impl Board {
     pub fn mouse_position(&self, window: &Window, position: Vec2) -> Option<Coordinates> {
         // Window to world space
         let window_size = Vec2::new(window.width(), window.height());
-        let position = position - window_size / 2.;
+        let position = Vec2::new(
+            position.x - window.width() / 2.0,
+            window.height() / 2.0 - position.y
+        );
 
         // Bounds check
         if !self.bounds.in_bounds(position) {

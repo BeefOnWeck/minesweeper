@@ -4,7 +4,7 @@ mod bounds;
 mod events;
 mod systems;
 
-use std::collections::HashMap;
+use bevy::utils::HashMap;
 use bevy::app::{App, Plugin, Startup};
 use bevy::asset::{AssetServer, Handle};
 use bevy::core::Name;
