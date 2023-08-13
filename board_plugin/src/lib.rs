@@ -106,43 +106,48 @@ impl BoardPlugin {
             ( tile_map.width() * tile_map.height() ).into()
         );
 
-        commands
-            .spawn(
-                SpatialBundle {
-                    visibility: Visibility::Visible,
-                    transform: Transform::from_translation(board_position.into()),
-                    ..Default::default()
-                })
-            .insert(Name::new("Board"))
-            .insert(Transform::from_translation(board_position))
-            .insert(GlobalTransform::default())
-            .with_children(|parent| {
-                // We spawn the board background sprite at the center of the board, since the sprite pivot is centered
-                parent
-                    .spawn(SpriteBundle {
-                        sprite: Sprite {
-                            color: Color::WHITE,
-                            custom_size: Some(board_size),
-                            ..Default::default()
-                        },
-                        transform: Transform::from_xyz(board_size.x / 2., board_size.y / 2., 0.),
-                        ..Default::default()
-                    })
-                    .insert(Name::new("Background"));
+        let mut safe_start = None;
 
-                Self::spawn_tiles(
-                    parent,
-                    &tile_map,
-                    tile_size,
-                    options.tile_padding,
-                    Color::DARK_GRAY,
-                    &mut covered_tiles,
-                    Color::GRAY,
-                    bomb_image,
-                    font,
-                );
-                
-            });
+        commands.spawn(
+            SpatialBundle {
+                visibility: Visibility::Visible,
+                transform: Transform::from_translation(board_position.into()),
+                ..Default::default()
+            }
+        ).insert(Name::new("Board"))
+        .insert(Transform::from_translation(board_position))
+        .insert(GlobalTransform::default())
+        .with_children(|parent| {
+            // We spawn the board background sprite at the center of the board, since the sprite pivot is centered
+            parent.spawn(SpriteBundle {
+                    sprite: Sprite {
+                        color: Color::WHITE,
+                        custom_size: Some(board_size),
+                        ..Default::default()
+                    },
+                    transform: Transform::from_xyz(board_size.x / 2., board_size.y / 2., 0.),
+                    ..Default::default()
+            }).insert(Name::new("Background"));
+
+            Self::spawn_tiles(
+                parent,
+                &tile_map,
+                tile_size,
+                options.tile_padding,
+                Color::DARK_GRAY,
+                &mut covered_tiles,
+                Color::GRAY,
+                bomb_image,
+                font,
+                &mut safe_start
+            );
+        });
+        
+        if options.safe_start {
+            if let Some(entity) = safe_start {
+                commands.entity(entity).insert(Uncover {});
+            }
+        }
         
         // We add the main resource of the game, the board
         commands.insert_resource(Board {
@@ -177,7 +182,8 @@ impl BoardPlugin {
         covered_tiles: &mut HashMap<Coordinates, Entity>,
         color: Color,
         bomb_image: Handle<Image>,
-        font: Handle<Font>
+        font: Handle<Font>,
+        safe_start_entity: &mut Option<Entity>
     ) {
         // Tiles
         for (y, line) in tile_map.iter().enumerate() {
@@ -220,6 +226,9 @@ impl BoardPlugin {
                         .insert(Name::new("Tile Cover"))
                         .id();
                     covered_tiles.insert(coordinates, entity);
+                    if safe_start_entity.is_none() && *tile == Tile::Empty {
+                        *safe_start_entity = Some(entity);
+                    }
                 });
                 match tile {
                     // If the tile is a bomb we add the matching component and a sprite child
